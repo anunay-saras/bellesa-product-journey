@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/bellesa-product-journey/static/css/main.e80248af.css",
-    "main.js": "/bellesa-product-journey/static/js/main.bb56a4e0.js",
+    "main.css": "/bellesa-product-journey/static/css/main.244e70ec.css",
+    "main.js": "/bellesa-product-journey/static/js/main.d72408a3.js",
     "index.html": "/bellesa-product-journey/index.html",
-    "main.e80248af.css.map": "/bellesa-product-journey/static/css/main.e80248af.css.map",
-    "main.bb56a4e0.js.map": "/bellesa-product-journey/static/js/main.bb56a4e0.js.map"
+    "main.244e70ec.css.map": "/bellesa-product-journey/static/css/main.244e70ec.css.map",
+    "main.d72408a3.js.map": "/bellesa-product-journey/static/js/main.d72408a3.js.map"
   },
   "entrypoints": [
-    "static/css/main.e80248af.css",
-    "static/js/main.bb56a4e0.js"
+    "static/css/main.244e70ec.css",
+    "static/js/main.d72408a3.js"
   ]
 }

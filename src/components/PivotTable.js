@@ -97,7 +97,9 @@ export default function PivotTable({ pivot, monthOptions }) {
                     <td className="c-num">
                       {intFull(r.no2nd)} <span className="sub">({pct(r.no2ndPct)})</span>
                     </td>
-                    <td className="c-num">{pct(r.rep180Rate)}</td>
+                    <td className="c-num" title={`${intFull(r.eligible6mo)} eligible (>180 days tenure)`}>
+                      {r.rep180Rate == null ? '—' : pct(r.rep180Rate)}
+                    </td>
                     <td className="c-num muted">{r.avgDaysTo2nd == null ? '—' : Math.round(r.avgDaysTo2nd) + 'd'}</td>
                     <td className="c-num strong">{moneyFull(r.netSales)}</td>
                     <td className="c-exp"><span className={'caret' + (isOpen ? ' open' : '')}>▸</span></td>

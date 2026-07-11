@@ -86,7 +86,12 @@ async function fetchWindow(n) {
     SELECT
       COUNT(*) AS customers,
       ROUND(SAFE_DIVIDE(COUNTIF(second_product_name IS NOT NULL), COUNT(*)) * 100, 1) AS repurchase_rate,
-      ROUND(SAFE_DIVIDE(COUNTIF(repurchased_within_180_days = 1), COUNT(*)) * 100, 1) AS repurchase_6mo_rate,
+      -- 6-mo repurchase: only customers with >180 days tenure qualify (denominator).
+      COUNTIF(acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)) AS eligible_6mo,
+      ROUND(SAFE_DIVIDE(
+        COUNTIF(repurchased_within_180_days = 1 AND acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)),
+        COUNTIF(acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY))
+      ) * 100, 1) AS repurchase_6mo_rate,
       ROUND(SUM(acquisition_net_sales_usd), 0) AS acq_sales
     FROM w`)
   )[0];
@@ -125,6 +130,7 @@ async function fetchWindow(n) {
       customers: num(kpis.customers),
       repurchaseRate: num(kpis.repurchase_rate),
       repurchase6moRate: num(kpis.repurchase_6mo_rate),
+      eligible6mo: num(kpis.eligible_6mo),
       acqSales: num(kpis.acq_sales),
     },
     node1: node1.map((r) => [r.product, num(r.free), num(r.customers)]),
@@ -173,7 +179,9 @@ async function fetchPivot() {
     SELECT b.acquisition_month AS month, b.acquisition_product_name AS acq,
            COUNT(*) AS customers,
            COUNTIF(b.second_product_name IS NOT NULL) AS with2nd,
-           COUNTIF(b.repurchased_within_180_days = 1) AS rep180,
+           -- 6-mo repurchase restricted to eligible (>180 days tenure)
+           COUNTIF(b.acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)) AS elig6mo,
+           COUNTIF(b.repurchased_within_180_days = 1 AND b.acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)) AS rep180_elig,
            SUM(b.days_to_second_order) AS days_sum,
            COUNTIF(b.days_to_second_order IS NOT NULL) AS days_cnt,
            ROUND(SUM(b.acquisition_net_sales_usd), 2) AS net_sales
@@ -212,7 +220,7 @@ async function fetchPivot() {
 
   return {
     metrics: metrics.map((r) => [
-      r.month, r.acq, num(r.customers), num(r.with2nd), num(r.rep180),
+      r.month, r.acq, num(r.customers), num(r.with2nd), num(r.rep180_elig), num(r.elig6mo),
       num(r.days_sum), num(r.days_cnt), num(r.net_sales),
     ]),
     second: second.map((r) => [r.month, r.acq, r.bucket, num(r.customers)]),
@@ -268,7 +276,7 @@ async function main() {
         'windows.node1': ['product', 'free(0/1)', 'customers'],
         'windows.link12': ['acqProduct', 'acqFree', 'secondProduct', 'secondFree', 'customers'],
         'windows.link23': ['secondProduct', 'secondFree', 'thirdProduct', 'thirdFree', 'customers'],
-        'pivot.metrics': ['month', 'acq', 'customers', 'with2nd', 'rep180', 'daysSum', 'daysCnt', 'netSales'],
+        'pivot.metrics': ['month', 'acq', 'customers', 'with2nd', 'rep180Elig', 'elig6mo', 'daysSum', 'daysCnt', 'netSales'],
         'pivot.second': ['month', 'acq', 'bucket("" = no 2nd)', 'customers'],
       },
     },

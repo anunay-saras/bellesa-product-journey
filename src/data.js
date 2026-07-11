@@ -145,18 +145,20 @@ export function buildJourney(win, freeSel, selectedAcq, selected2nd, opts = {}) 
 }
 
 // ---- pivot: acquisition product -> 2nd product breakdown --------------------
-// metrics: [month, acq, customers, with2nd, rep180, daysSum, daysCnt, netSales]
+// metrics: [month, acq, customers, with2nd, rep180Elig, elig6mo, daysSum, daysCnt, netSales]
+//   rep180Elig / elig6mo = 6-mo repurchase rate over customers with >180 days tenure only
 // second : [month, acq, bucket("" = no 2nd), customers]
 export function buildPivot(pivot, monthsSet, topAcq = 15, top2nd = 8) {
   const m = new Map();
-  for (const [month, acq, customers, with2nd, rep180, daysSum, daysCnt, netSales] of pivot.metrics) {
+  for (const [month, acq, customers, with2nd, rep180Elig, elig6mo, daysSum, daysCnt, netSales] of pivot.metrics) {
     if (!monthsSet.has(month)) continue;
     const cur =
       m.get(acq) ||
-      { acq, customers: 0, with2nd: 0, rep180: 0, daysSum: 0, daysCnt: 0, netSales: 0 };
+      { acq, customers: 0, with2nd: 0, rep180Elig: 0, elig6mo: 0, daysSum: 0, daysCnt: 0, netSales: 0 };
     cur.customers += customers;
     cur.with2nd += with2nd;
-    cur.rep180 += rep180;
+    cur.rep180Elig += rep180Elig;
+    cur.elig6mo += elig6mo;
     cur.daysSum += daysSum;
     cur.daysCnt += daysCnt;
     cur.netSales += netSales;
@@ -190,7 +192,8 @@ export function buildPivot(pivot, monthsSet, topAcq = 15, top2nd = 8) {
         no2ndPct: r.customers ? (no2nd / r.customers) * 100 : 0,
         repurchasers: r.with2nd,
         repurchaseRate: r.customers ? (r.with2nd / r.customers) * 100 : 0,
-        rep180Rate: r.customers ? (r.rep180 / r.customers) * 100 : 0,
+        eligible6mo: r.elig6mo,
+        rep180Rate: r.elig6mo ? (r.rep180Elig / r.elig6mo) * 100 : null,
         avgDaysTo2nd: r.daysCnt ? r.daysSum / r.daysCnt : null,
         netSales: r.netSales,
         aov: r.customers ? r.netSales / r.customers : 0,

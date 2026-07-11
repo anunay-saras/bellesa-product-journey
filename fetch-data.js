@@ -53,8 +53,11 @@ const BASE = `
       third_product_name,        IF(third_is_free_product, 1, 0)       AS third_free,  third_net_sales_usd,
       days_to_second_order, repurchased_within_180_days
     FROM (
+      -- Keep each customer's FIRST-EVER acquisition (true-new-customer grain).
+      -- A later "acquisition" row for the same customer is a reactivation, not a
+      -- new acquisition, and is dropped. Ties on date resolved by latest _last_updated.
       SELECT *, ROW_NUMBER() OVER (
-        PARTITION BY customer_id, acquisition_date ORDER BY _last_updated DESC
+        PARTITION BY customer_id ORDER BY acquisition_date ASC, _last_updated DESC
       ) AS _rn
       FROM ${TABLE}
       WHERE acquisition_date < DATE_TRUNC(CURRENT_DATE(), MONTH)
@@ -73,48 +76,47 @@ const num = (v) => (v === null || v === undefined ? 0 : Number(v));
 
 async function fetchWindow(n) {
   const lb = windowLowerBound(n);
-  // Rebuild BASE with an extra trailing-window lower bound on acquisition_date.
-  const baseWin = BASE.replace(
-    'WHERE acquisition_date < DATE_TRUNC(CURRENT_DATE(), MONTH)',
-    `WHERE acquisition_date < DATE_TRUNC(CURRENT_DATE(), MONTH) AND acquisition_date >= ${lb}`
-  );
+  // Dedup to first-acquisition FIRST (full history), THEN restrict to the
+  // trailing window — so a reactivation inside the window can't be mistaken
+  // for an acquisition.
+  const WIN = `${BASE}, w AS (SELECT * FROM base WHERE acquisition_date >= ${lb})`;
 
   const kpis = (
-    await q(`WITH ${baseWin}
+    await q(`WITH ${WIN}
     SELECT
       COUNT(*) AS customers,
       ROUND(SAFE_DIVIDE(COUNTIF(second_product_name IS NOT NULL), COUNT(*)) * 100, 1) AS repurchase_rate,
       ROUND(SAFE_DIVIDE(COUNTIF(repurchased_within_180_days = 1), COUNT(*)) * 100, 1) AS repurchase_6mo_rate,
       ROUND(SUM(acquisition_net_sales_usd), 0) AS acq_sales
-    FROM base`)
+    FROM w`)
   )[0];
 
-  const node1 = await q(`WITH ${baseWin}
+  const node1 = await q(`WITH ${WIN}
     SELECT acquisition_product_name AS product, acq_free AS free, COUNT(*) AS customers
-    FROM base
+    FROM w
     WHERE acquisition_product_name IS NOT NULL
     GROUP BY 1, 2`);
 
-  const link12 = await q(`WITH ${baseWin},
+  const link12 = await q(`WITH ${WIN},
     pool AS (
-      SELECT acquisition_product_name FROM base
+      SELECT acquisition_product_name FROM w
       GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT ${SANKEY_ACQ_POOL}
     )
     SELECT b.acquisition_product_name AS a, b.acq_free AS af,
            b.second_product_name AS c, b.second_free AS cf, COUNT(*) AS customers
-    FROM base b JOIN pool USING (acquisition_product_name)
+    FROM w b JOIN pool USING (acquisition_product_name)
     WHERE b.second_product_name IS NOT NULL
     GROUP BY 1, 2, 3, 4`);
 
-  const link23 = await q(`WITH ${baseWin},
+  const link23 = await q(`WITH ${WIN},
     pool AS (
-      SELECT second_product_name FROM base
+      SELECT second_product_name FROM w
       WHERE second_product_name IS NOT NULL
       GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT ${SANKEY_2ND_POOL}
     )
     SELECT b.second_product_name AS c, b.second_free AS cf,
            b.third_product_name AS d, b.third_free AS df, COUNT(*) AS customers
-    FROM base b JOIN pool USING (second_product_name)
+    FROM w b JOIN pool USING (second_product_name)
     WHERE b.third_product_name IS NOT NULL
     GROUP BY 1, 2, 3, 4`);
 
@@ -252,7 +254,9 @@ async function main() {
       source: 'insightsprod.bellesaenterprises_5719_prod_presentation.customer_product_purchase_journey',
       currentMonthExcluded: true,
       anchor: 'acquisition_month (cohort)',
-      dedupe: 'latest _last_updated per (customer_id, acquisition_date)',
+      grain: 'true-new customer (each customer\'s first-ever acquisition; reactivations dropped)',
+      platformScope: 'ALL platforms (Shopify + Amazon Seller Central). Journey table has no platform field so it cannot be Shopify-scoped. Reconciles to customer_value_summary all-platform.',
+      dedupe: 'first acquisition_date per customer_id, ties by latest _last_updated',
       caps: {
         sankeyAcqPool: SANKEY_ACQ_POOL,
         sankey2ndPool: SANKEY_2ND_POOL,

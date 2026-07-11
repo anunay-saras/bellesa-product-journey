@@ -37,8 +37,9 @@ export default function App() {
             <div className="hero-eyebrow">BELLESA · PRODUCT ANALYTICS</div>
             <h1 className="hero-title">Product Purchase Journey</h1>
             <p className="hero-sub">
-              Customer flow from acquisition to repeat purchase · cohort-anchored ·
-              current month excluded · refreshed {generated}
+              New-customer flow from acquisition to repeat purchase · counted by each
+              customer's first-ever acquisition · all platforms · current month excluded ·
+              refreshed {generated}
             </p>
           </div>
           <div className="hero-right">

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import './ProductTables.css';
-import { buildTable, resolveMonths, monthPresets, monthLabel, intFull, moneyFull, money } from '../data';
+import { buildTable, resolveMonths, monthPresets, monthLabel, intFull, moneyFull } from '../data';
 import { FreeFilter, Dropdown } from './controls';
 
 const LEVELS = [
@@ -28,7 +28,6 @@ function LevelTable({ badge, title, rows, free, onFree }) {
               <th className="c-prod">Product</th>
               <th className="c-num">Orders</th>
               <th className="c-num">Net sales</th>
-              <th className="c-num">AOV</th>
             </tr>
           </thead>
           <tbody>
@@ -41,11 +40,10 @@ function LevelTable({ badge, title, rows, free, onFree }) {
                 </td>
                 <td className="c-num">{intFull(r.orders)}</td>
                 <td className="c-num strong">{moneyFull(r.netSales)}</td>
-                <td className="c-num muted">{money(r.aov)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={5} className="empty">No products for this selection.</td></tr>
+              <tr><td colSpan={4} className="empty">No products for this selection.</td></tr>
             )}
           </tbody>
         </table>

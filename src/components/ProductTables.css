@@ -6,7 +6,7 @@
 
 .lvl-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: 18px;
 }
 
@@ -17,6 +17,7 @@
   padding: 16px 16px 8px;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* allow the grid track to shrink instead of overflowing */
 }
 .lvl-head {
   display: flex;
@@ -24,6 +25,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 .lvl-title {
   font-size: 12.5px;
@@ -50,7 +52,7 @@
 .b-2nd { background: #18b48a; }
 .b-3rd { background: #f0a935; }
 
-.lvl-table-wrap { overflow-x: auto; }
+.lvl-table-wrap { overflow-x: auto; min-width: 0; }
 .lvl-table {
   width: 100%;
   border-collapse: collapse;

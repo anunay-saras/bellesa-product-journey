@@ -3,7 +3,6 @@
 // No React here; components stay presentational.
 // -----------------------------------------------------------------------------
 
-const SEP = ''; // delimiter for composite link keys (never appears in names)
 
 // ---- formatting -------------------------------------------------------------
 export function compact(n) {
@@ -79,19 +78,23 @@ export function buildTable(rows, monthsSet, freeSel, topN = 20) {
   return list.slice(0, topN);
 }
 
-// ---- sankey -----------------------------------------------------------------
-// Builds the 3-column model from a window's node1/link12/link23 grains,
-// applying the three independent free selections.
-export function buildSankey(win, freeSel, opts = {}) {
+// ---- sankey (click drill-down) ----------------------------------------------
+// Column 1 = top-15 acquisition products. Selecting an acquisition product
+// reveals the 2nd products THOSE acquirers bought (path count = people who
+// bought that 2nd product after this 1st product). Selecting a 2nd product
+// reveals the 3rd products bought after it. Counts are always path-specific.
+export function buildJourney(win, freeSel, selectedAcq, selected2nd, opts = {}) {
   const { acq: acqFree, second: secFree, third: thirdFree } = freeSel;
   const TOP_ACQ = opts.topAcq || 15;
   const TOP_2ND = opts.top2nd || 12;
   const TOP_3RD = opts.top3rd || 12;
+  const q = (opts.query || '').trim().toLowerCase();
 
-  // Column 1: acquisition products
+  // Column 1: acquisition products (optionally filtered by search)
   const acqAgg = new Map();
   for (const [product, free, customers] of win.node1) {
     if (!matchFree(acqFree, free)) continue;
+    if (q && !product.toLowerCase().includes(q)) continue;
     acqAgg.set(product, (acqAgg.get(product) || 0) + customers);
   }
   const acqNodes = [...acqAgg.entries()]
@@ -100,54 +103,45 @@ export function buildSankey(win, freeSel, opts = {}) {
     .slice(0, TOP_ACQ);
   const acqSet = new Set(acqNodes.map((n) => n.name));
 
-  // Links 1->2 (only from the top acq nodes), aggregate 2nd products
-  const l12 = new Map();
+  // Resolve the selected acquisition product (fall back to the top one).
+  const curAcq = selectedAcq && acqSet.has(selectedAcq) ? selectedAcq : acqNodes[0]?.name || null;
+
+  // Column 2: 2nd products bought by curAcq's acquirers.
   const secAgg = new Map();
-  for (const [a, af, c, cf, customers] of win.link12) {
-    if (!acqSet.has(a)) continue;
-    if (!matchFree(acqFree, af)) continue;
-    if (!matchFree(secFree, cf)) continue;
-    secAgg.set(c, (secAgg.get(c) || 0) + customers);
-    const k = a + SEP + c;
-    l12.set(k, (l12.get(k) || 0) + customers);
+  if (curAcq) {
+    for (const [a, af, c, cf, customers] of win.link12) {
+      if (a !== curAcq) continue;
+      if (!matchFree(acqFree, af)) continue;
+      if (!matchFree(secFree, cf)) continue;
+      secAgg.set(c, (secAgg.get(c) || 0) + customers);
+    }
   }
   const secNodes = [...secAgg.entries()]
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, TOP_2ND);
   const secSet = new Set(secNodes.map((n) => n.name));
+  const cur2nd = selected2nd && secSet.has(selected2nd) ? selected2nd : secNodes[0]?.name || null;
 
-  // Links 2->3 (only from the top 2nd nodes), aggregate 3rd products
-  const l23 = new Map();
+  // Column 3: 3rd products bought after cur2nd.
   const thirdAgg = new Map();
-  for (const [c, cf, d, df, customers] of win.link23) {
-    if (!secSet.has(c)) continue;
-    if (!matchFree(secFree, cf)) continue;
-    if (!matchFree(thirdFree, df)) continue;
-    thirdAgg.set(d, (thirdAgg.get(d) || 0) + customers);
-    const k = c + SEP + d;
-    l23.set(k, (l23.get(k) || 0) + customers);
+  if (cur2nd) {
+    for (const [c, cf, d, df, customers] of win.link23) {
+      if (c !== cur2nd) continue;
+      if (!matchFree(secFree, cf)) continue;
+      if (!matchFree(thirdFree, df)) continue;
+      thirdAgg.set(d, (thirdAgg.get(d) || 0) + customers);
+    }
   }
   const thirdNodes = [...thirdAgg.entries()]
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
     .slice(0, TOP_3RD);
-  const thirdSet = new Set(thirdNodes.map((n) => n.name));
 
-  const links12 = [...l12.entries()]
-    .map(([k, v]) => {
-      const [source, target] = k.split(SEP);
-      return { source, target, value: v };
-    })
-    .filter((l) => secSet.has(l.target));
-  const links23 = [...l23.entries()]
-    .map(([k, v]) => {
-      const [source, target] = k.split(SEP);
-      return { source, target, value: v };
-    })
-    .filter((l) => thirdSet.has(l.target));
+  const links12 = curAcq ? secNodes.map((n) => ({ source: curAcq, target: n.name, value: n.value })) : [];
+  const links23 = cur2nd ? thirdNodes.map((n) => ({ source: cur2nd, target: n.name, value: n.value })) : [];
 
-  return { acqNodes, secNodes, thirdNodes, links12, links23 };
+  return { acqNodes, secNodes, thirdNodes, links12, links23, curAcq, cur2nd };
 }
 
 // ---- pivot: acquisition product -> 2nd product breakdown --------------------

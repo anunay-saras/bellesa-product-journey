@@ -32,6 +32,7 @@ html, body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden; /* scrollable regions manage their own horizontal scroll */
 }
 
 #root { min-height: 100vh; }

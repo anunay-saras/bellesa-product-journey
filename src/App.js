@@ -6,6 +6,7 @@ import SankeyJourney from './components/SankeyJourney';
 import ProductTables from './components/ProductTables';
 import PivotTable from './components/PivotTable';
 import Guide from './components/Guide';
+import SarasLogo from './components/SarasLogo';
 import { Segmented } from './components/controls';
 
 const WINDOW_OPTIONS = [
@@ -38,6 +39,10 @@ export default function App() {
   return (
     <div className="app">
       <div className="shell">
+        <div className="brandbar">
+          <SarasLogo />
+          <span className="brandbar-tag">Analytics</span>
+        </div>
         <header className="hero">
           <div className="hero-left">
             <div className="hero-eyebrow">BELLESA · PRODUCT ANALYTICS</div>

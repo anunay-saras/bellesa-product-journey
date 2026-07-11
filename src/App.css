@@ -6,6 +6,31 @@
   padding: 40px 32px 64px;
 }
 
+/* ---- brand bar ---- */
+.brandbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.saras-logo {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+.brandbar-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 3px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+}
+
 /* ---- hero ---- */
 .hero {
   display: flex;

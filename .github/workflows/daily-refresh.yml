@@ -27,7 +27,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       - name: Write service-account key from secret
         run: printf '%s' "$GCP_SA_KEY" > "$RUNNER_TEMP/gcp-sa-key.json"

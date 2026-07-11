@@ -45,7 +45,8 @@ const WINDOWS = { '6m': 6, '12m': 12, '24m': 24 };
 const SANKEY_ACQ_POOL = 40; // acq products carried into link12 (top-15 shown)
 const SANKEY_2ND_POOL = 40; // 2nd products carried into link23
 const TABLE_TOP_PER_MONTH = 40; // products kept per month per level (top-20 shown)
-const PIVOT_ACQ_POOL = 25; // acq products carried into the pivot (top-15 shown)
+// Pivot draws from the SAME per-month-top-N universe as the product tables
+// (TABLE_TOP_PER_MONTH), so its ranked top-N matches the 1st-acquisition table.
 const PIVOT_2ND_PER_ACQ = 12; // named 2nd products per acq; rest -> "Other 2nd products"
 
 const bq = new BigQuery({ projectId: PROJECT });
@@ -185,12 +186,22 @@ async function fetchTable(level) {
 }
 
 async function fetchPivot() {
+  // Identical per-(month,product) masking to the product tables: a product is
+  // counted for a month only if it is in that month's top-N. This makes the
+  // pivot's ranked top-N match the 1st-acquisition table exactly, and keeps the
+  // baked file compact.
+  const TOP = `top AS (
+      SELECT month, product FROM (
+        SELECT acquisition_month AS month, acquisition_product_name AS product,
+               ROW_NUMBER() OVER (PARTITION BY acquisition_month ORDER BY COUNT(*) DESC) rk
+        FROM base WHERE acquisition_product_name IS NOT NULL
+        GROUP BY 1, 2
+      ) WHERE rk <= ${TABLE_TOP_PER_MONTH}
+    )`;
+  const JOIN_TOP = 'JOIN top ON top.month = b.acquisition_month AND top.product = b.acquisition_product_name';
+
   const metrics = await q(`WITH ${BASE},
-    pool AS (
-      SELECT acquisition_product_name FROM base
-      WHERE acquisition_product_name IS NOT NULL
-      GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT ${PIVOT_ACQ_POOL}
-    )
+    ${TOP}
     SELECT b.acquisition_month AS month, b.acquisition_product_name AS acq,
            COUNT(*) AS customers,
            COUNTIF(b.second_product_name IS NOT NULL) AS with2nd,
@@ -200,18 +211,14 @@ async function fetchPivot() {
            SUM(b.days_to_second_order) AS days_sum,
            COUNTIF(b.days_to_second_order IS NOT NULL) AS days_cnt,
            ROUND(SUM(b.acquisition_net_sales_usd), 2) AS net_sales
-    FROM base b JOIN pool USING (acquisition_product_name)
+    FROM base b ${JOIN_TOP}
     GROUP BY 1, 2`);
 
   // Named 2nd products per acq (top-N overall); everything else -> "Other 2nd products".
   // NULL 2nd (no repeat purchase) is emitted as the empty-string bucket.
   const second = await q(`WITH ${BASE},
-    pool AS (
-      SELECT acquisition_product_name FROM base
-      WHERE acquisition_product_name IS NOT NULL
-      GROUP BY 1 ORDER BY COUNT(*) DESC LIMIT ${PIVOT_ACQ_POOL}
-    ),
-    scoped AS (SELECT b.* FROM base b JOIN pool USING (acquisition_product_name)),
+    ${TOP},
+    scoped AS (SELECT b.* FROM base b ${JOIN_TOP}),
     named AS (
       SELECT acquisition_product_name, second_product_name FROM (
         SELECT acquisition_product_name, second_product_name,
@@ -297,7 +304,7 @@ async function main() {
         sankeyAcqPool: SANKEY_ACQ_POOL,
         sankey2ndPool: SANKEY_2ND_POOL,
         tableTopPerMonth: TABLE_TOP_PER_MONTH,
-        pivotAcqPool: PIVOT_ACQ_POOL,
+        pivotAcqUniverse: `per-month top ${TABLE_TOP_PER_MONTH} (same as tables)`,
         pivot2ndPerAcq: PIVOT_2ND_PER_ACQ,
       },
       schema: {

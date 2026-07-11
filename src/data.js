@@ -74,7 +74,7 @@ export function buildTable(rows, monthsSet, freeSel, topN = 20) {
     orders: r.customers, // one order per purchase-level per customer
     aov: r.customers ? r.netSales / r.customers : 0,
   }));
-  list.sort((a, b) => b.customers - a.customers);
+  list.sort((a, b) => b.customers - a.customers || a.product.localeCompare(b.product));
   return list.slice(0, topN);
 }
 
@@ -200,7 +200,7 @@ export function buildPivot(pivot, monthsSet, topAcq = 15, top2nd = 8) {
         topSecond: named.slice(0, top2nd),
       };
     })
-    .sort((a, b) => b.customers - a.customers)
+    .sort((a, b) => b.customers - a.customers || a.acq.localeCompare(b.acq))
     .slice(0, topAcq);
 
   return rows;

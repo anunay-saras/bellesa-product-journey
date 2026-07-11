@@ -35,7 +35,7 @@ export default function PivotTable({ pivot, monthOptions }) {
 
   const monthsSet = useMemo(() => resolveMonths(monthOptions, month), [monthOptions, month]);
   const presets = monthPresets(monthOptions);
-  const rows = useMemo(() => buildPivot(pivot, monthsSet, 15, 8), [pivot, monthsSet]);
+  const rows = useMemo(() => buildPivot(pivot, monthsSet, 20, 8), [pivot, monthsSet]);
 
   const toggle = (acq) =>
     setOpen((prev) => {
@@ -50,7 +50,7 @@ export default function PivotTable({ pivot, monthOptions }) {
         <div>
           <h2 className="card-title">Acquisition → 2nd Purchase Pivot</h2>
           <p className="card-desc">
-            Top 15 acquisition products · repeat-purchase behaviour &amp; where those customers went next ·
+            Top 20 acquisition products · repeat-purchase behaviour &amp; where those customers went next ·
             click a row to expand the 2nd-product mix
           </p>
         </div>

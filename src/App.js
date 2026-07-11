@@ -41,7 +41,6 @@ export default function App() {
       <div className="shell">
         <div className="brandbar">
           <SarasLogo />
-          <span className="brandbar-tag">Analytics</span>
         </div>
         <header className="hero">
           <div className="hero-left">

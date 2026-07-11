@@ -50,6 +50,10 @@
   color: var(--muted);
 }
 
+.tabs {
+  margin: 4px 0 22px;
+}
+
 /* ---- generic card ---- */
 .card {
   background: var(--card);

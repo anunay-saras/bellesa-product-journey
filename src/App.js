@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import './App.css';
 import baked from './baked-data.json';
-import { monthLabel } from './data';
 import KpiTiles from './components/KpiTiles';
 import SankeyJourney from './components/SankeyJourney';
 import ProductTables from './components/ProductTables';
 import PivotTable from './components/PivotTable';
+import Guide from './components/Guide';
 import { Segmented } from './components/controls';
 
 const WINDOW_OPTIONS = [
@@ -14,8 +14,14 @@ const WINDOW_OPTIONS = [
   { id: '24m', label: '24M' },
 ];
 
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'guide', label: 'Guide' },
+];
+
 export default function App() {
   const [win, setWin] = useState('12m');
+  const [view, setView] = useState('dashboard');
 
   const generated = useMemo(() => {
     try {
@@ -42,30 +48,28 @@ export default function App() {
               refreshed {generated}
             </p>
           </div>
-          <div className="hero-right">
-            <span className="hero-window-label">Acquisition window</span>
-            <Segmented options={WINDOW_OPTIONS} value={win} onChange={setWin} />
-          </div>
+          {view === 'dashboard' && (
+            <div className="hero-right">
+              <span className="hero-window-label">Acquisition window</span>
+              <Segmented options={WINDOW_OPTIONS} value={win} onChange={setWin} />
+            </div>
+          )}
         </header>
 
-        <KpiTiles kpis={windowData.kpis} />
+        <div className="tabs">
+          <Segmented options={TABS} value={view} onChange={setView} />
+        </div>
 
-        <SankeyJourney windowData={windowData} winLabel={win.toUpperCase()} />
-
-        <ProductTables tables={baked.tables} monthOptions={baked.monthOptions} />
-
-        <PivotTable pivot={baked.pivot} monthOptions={baked.monthOptions} />
-
-        <footer className="foot">
-          <span>
-            Source: <code>{baked.meta.source}</code>
-          </span>
-          <span>
-            {baked.monthOptions.length} complete months ·{' '}
-            {monthLabel(baked.monthOptions[baked.monthOptions.length - 1])} –{' '}
-            {monthLabel(baked.monthOptions[0])}
-          </span>
-        </footer>
+        {view === 'dashboard' ? (
+          <>
+            <KpiTiles kpis={windowData.kpis} />
+            <SankeyJourney windowData={windowData} winLabel={win.toUpperCase()} />
+            <ProductTables tables={baked.tables} monthOptions={baked.monthOptions} />
+            <PivotTable pivot={baked.pivot} monthOptions={baked.monthOptions} />
+          </>
+        ) : (
+          <Guide generated={generated} monthCount={baked.monthOptions.length} />
+        )}
       </div>
     </div>
   );

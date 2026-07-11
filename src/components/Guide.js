@@ -61,14 +61,14 @@ export default function Guide({ generated, monthCount }) {
           </div>
           <div>
             <dt>Repurchase rate</dt>
-            <dd>Of those customers, the share who ever made a 2nd purchase.</dd>
+            <dd>Customers who made a 2nd purchase ÷ all customers acquired in the period.</dd>
           </div>
           <div>
             <dt>6-month repurchase</dt>
             <dd>
-              The share who bought again <b>within 180 days</b> of their first order. To be fair, this
-              only counts customers who have <b>been around at least 180 days</b> — someone who bought
-              last month hasn’t had a full 6-month window yet, so they’re left out of this one.
+              Customers who bought again within <b>180 days</b> ÷ customers who have <b>been around at
+              least 180 days</b>. Recent buyers who haven’t had a full 6-month window yet aren’t counted
+              (they can’t have repurchased in a window that hasn’t finished).
             </dd>
           </div>
           <div>
@@ -101,11 +101,11 @@ export default function Guide({ generated, monthCount }) {
             <div>
               <div className="guide-item-title">Free-product filter (All / Paid / Free)</div>
               <p>
-                Each step has its own toggle. A <b>free product</b> is an item tagged as a free
-                promotion (<i>Promotion = “Free Product”</i>) — this is a tag, not a $0 price. A
-                purchase counts as <b>free</b> if the order contained <b>any</b> free-tagged item (it
-                may still include other paid items). Use <b>Paid</b> for orders with no free item,
-                <b>Free</b> for those that include one, or <b>All</b> for everything.
+                Each step has its own toggle. A <b>free product</b> is an item given as a free
+                promotion — it’s a promo tag, not simply a $0 price. A purchase counts as
+                {' '}<b>free</b> if the order contained <b>any</b> free-tagged item (it may still
+                include other paid items). Use <b>Paid</b> for orders with no free item, <b>Free</b>
+                {' '}for those that include one, or <b>All</b> for everything.
               </p>
             </div>
           </div>
@@ -116,9 +116,8 @@ export default function Guide({ generated, monthCount }) {
         <h3 className="guide-h2">Good to know</h3>
         <ul className="guide-list">
           <li>Everything is sliced by <b>when the customer was acquired</b>, so a period shows that group of new customers and what they did next.</li>
-          <li>Covers <b>all sales channels</b> (Shopify + Amazon). A Shopify-only view would be slightly smaller.</li>
+          <li>Covers <b>all sales channels</b> (Shopify + Amazon).</li>
           <li>Data refreshes <b>automatically every day</b> (last refresh: {generated}). {monthCount} complete months of history are available in the month picker.</li>
-          <li>The “6-month repurchase” counts any repeat order within 180 days, including orders that contained a free-promotion item — so it reads a little higher than finance’s stricter “paid repurchase” definition.</li>
         </ul>
       </section>
     </div>

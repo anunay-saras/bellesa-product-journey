@@ -5,13 +5,13 @@ import { compact, money, pct } from '../data';
 export default function KpiTiles({ kpis }) {
   const tiles = [
     { key: 'cust', icon: '👥', label: 'Customers acquired', value: compact(kpis.customers), tone: 'a',
-      hint: 'True-new customers (each customer\'s first-ever acquisition), all platforms. Reconciles to customer_value_summary all-platform.' },
+      hint: 'New customers in this period, counted by their first-ever purchase (all sales channels).' },
     { key: 'rep', icon: '🔁', label: 'Repurchase rate', value: pct(kpis.repurchaseRate), tone: 'b',
-      hint: 'Share of acquired customers whose journey shows a 2nd purchase. Journey-table definition; differs from customer_value_summary.' },
+      hint: 'Customers who made a 2nd purchase ÷ all customers acquired in the period.' },
     { key: 'rep6', icon: '⏱️', label: '6-mo repurchase', value: pct(kpis.repurchase6moRate), tone: 'c',
-      hint: `Share who repurchased within 180 days — computed only over customers with >180 days tenure (${compact(kpis.eligible6mo)} eligible). Recent cohorts that haven't had a full 6-month window are excluded.` },
+      hint: `Customers who repurchased within 180 days ÷ customers with at least 180 days since acquisition (${compact(kpis.eligible6mo)} eligible). Recent buyers who haven't had a full 6-month window aren't counted.` },
     { key: 'sales', icon: '💰', label: 'Acquisition net sales', value: money(kpis.acqSales), tone: 'd',
-      hint: 'Net sales of the acquisition (first) order only — not lifetime cohort revenue.' },
+      hint: 'Net sales from customers\' first (acquisition) order — not their lifetime spend.' },
   ];
   return (
     <div className="kpis">

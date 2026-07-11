@@ -56,22 +56,22 @@
 .lvl-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 12px;
 }
 .lvl-table thead th {
   text-align: right;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--muted);
-  padding: 6px 8px;
+  padding: 6px 6px;
   border-bottom: 1px solid var(--line-strong);
 }
-.lvl-table th.c-rank, .lvl-table td.c-rank { text-align: center; width: 26px; color: var(--muted); font-weight: 700; }
+.lvl-table th.c-rank, .lvl-table td.c-rank { text-align: center; width: 24px; color: var(--muted); font-weight: 700; }
 .lvl-table th.c-prod { text-align: left; }
 .lvl-table td {
-  padding: 8px;
+  padding: 7px 6px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
@@ -81,7 +81,7 @@
 .c-prod { position: relative; min-width: 120px; }
 .prod-name {
   display: block;
-  max-width: 160px;
+  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

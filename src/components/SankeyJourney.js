@@ -1,18 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useLayoutEffect } from 'react';
 import './SankeyJourney.css';
 import { buildJourney, compact, intFull } from '../data';
 import { FreeFilter } from './controls';
 
-// SVG layout constants (coordinate space; scales responsively via viewBox).
+// SVG layout constants. Column X positions are computed from the measured
+// container width so the 3 columns fill the full width evenly (2nd centered,
+// 3rd flush-right — no trailing whitespace).
 const NW = 250; // node width
 const RH = 32; // row height
 const RG = 10; // row gap
 const HEADER_H = 34;
-const COL_X = [0, 375, 750];
-const RIGHT = [NW, 375 + NW, 750 + NW];
-const LEFT = [0, 375, 750];
+const MIN_GAP = 90; // minimum horizontal gap between columns (link curve room)
+const MIN_W = 3 * NW + 2 * MIN_GAP; // 930
 
-function truncate(s, n = 26) {
+function truncate(s, n = 30) {
   return s && s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
@@ -21,6 +22,24 @@ export default function SankeyJourney({ windowData, winLabel }) {
   const [query, setQuery] = useState('');
   const [selAcq, setSelAcq] = useState(null);
   const [sel2nd, setSel2nd] = useState(null);
+
+  // Measure the container so the 3 columns fill the full width evenly.
+  const scrollRef = useRef(null);
+  const [W, setW] = useState(1100);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => setW(Math.max(MIN_W, Math.round(el.clientWidth)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const gap = (W - 3 * NW) / 2;
+  const COL_X = [0, NW + gap, 2 * NW + 2 * gap];
+  const RIGHT = [COL_X[0] + NW, COL_X[1] + NW, COL_X[2] + NW];
+  const LEFT = COL_X;
 
   const model = useMemo(
     () => buildJourney(windowData, free, selAcq, sel2nd, { query }),
@@ -100,12 +119,13 @@ export default function SankeyJourney({ windowData, winLabel }) {
         </span>
       </div>
 
-      <div className="sankey-scroll">
+      <div className="sankey-scroll" ref={scrollRef}>
         <svg
           className="sankey-svg"
-          viewBox={`0 0 1000 ${totalH}`}
-          style={{ minWidth: 760, height: totalH }}
-          preserveAspectRatio="xMinYMin meet"
+          width={W}
+          height={totalH}
+          viewBox={`0 0 ${W} ${totalH}`}
+          preserveAspectRatio="xMidYMid meet"
         >
           <defs>
             <linearGradient id="linkg" x1="0" y1="0" x2="1" y2="0">

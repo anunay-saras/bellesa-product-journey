@@ -1,0 +1,107 @@
+.app { width: 100%; }
+
+.shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 40px 28px 64px;
+}
+
+/* ---- hero ---- */
+.hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 26px;
+}
+.hero-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--brand-ink);
+  margin-bottom: 10px;
+}
+.hero-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.hero-sub {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 640px;
+  line-height: 1.5;
+}
+.hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.hero-window-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ---- generic card ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin-bottom: 22px;
+}
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.card-desc {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.foot {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 0 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.foot code {
+  font-size: 11px;
+  color: var(--ink-soft);
+  background: rgba(124, 92, 255, 0.08);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+@media (max-width: 720px) {
+  .shell { padding: 26px 16px 48px; }
+  .hero { flex-direction: column; align-items: stretch; }
+  .hero-right { align-items: flex-start; }
+  .hero-title { font-size: 27px; }
+}

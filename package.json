@@ -1,0 +1,32 @@
+{
+  "name": "bellesa-product-journey",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "https://anunay-saras.github.io/bellesa-product-journey",
+  "description": "Bellesa Product Purchase Journey dashboard — Sankey flow, product tables and acquisition->2nd pivot, baked from BigQuery and hosted on GitHub Pages.",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "@google-cloud/bigquery": "^7.9.0",
+    "gh-pages": "^6.1.1"
+  },
+  "scripts": {
+    "fetch-data": "node fetch-data.js",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build"
+  },
+  "eslintConfig": {
+    "extends": ["react-app"]
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  }
+}

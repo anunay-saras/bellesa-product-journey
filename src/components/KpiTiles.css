@@ -25,7 +25,15 @@
 .kpi-c::before { background: linear-gradient(90deg, #f0a935, #ffca6b); }
 .kpi-d::before { background: linear-gradient(90deg, #ef5f7a, #ff90a4); }
 
-.kpi-top { display: flex; align-items: center; margin-bottom: 14px; }
+.kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.kpi-info {
+  font-size: 13px;
+  color: var(--muted);
+  opacity: 0.55;
+  cursor: help;
+  transition: opacity 0.15s;
+}
+.kpi-info:hover { opacity: 1; }
 .kpi-icon {
   display: inline-flex;
   align-items: center;

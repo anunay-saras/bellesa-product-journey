@@ -21,6 +21,12 @@
  *  - Windows 6m / 12m / 24m are trailing full-month cohort windows.
  *  - "orders" == customers at every purchase level (one order per level per
  *    customer), so the app derives Orders and AOV from customers + netSales.
+ *  - FREE PRODUCT: driven by the source is_free_product flag, which is tagged
+ *    by Promotion = 'Free Product' (NOT by $0 / zero value). A purchase counts
+ *    as free if the order contained ANY free-tagged item (so a "free" order can
+ *    still carry net sales from its other, paid items).
+ *  - COST CACHE: the bake is skipped (no BigQuery scan) when the source table
+ *    has not been modified since the last bake — see meta.sourceLastModified.
  * ----------------------------------------------------------------------------
  */
 const { BigQuery } = require('@google-cloud/bigquery');
@@ -28,9 +34,11 @@ const fs = require('fs');
 const path = require('path');
 
 const PROJECT = 'insightsprod';
-const TABLE =
-  '`insightsprod.bellesaenterprises_5719_prod_presentation.customer_product_purchase_journey`';
+const DATASET = 'bellesaenterprises_5719_prod_presentation';
+const TABLE_ID = 'customer_product_purchase_journey';
+const TABLE = `\`${PROJECT}.${DATASET}.${TABLE_ID}\``;
 const OUT = path.join(__dirname, 'src', 'baked-data.json');
+const FORCE = process.argv.includes('--force') || !!process.env.FORCE_BAKE;
 
 // Caps that keep the baked file small while preserving exact top-N answers.
 const WINDOWS = { '6m': 6, '12m': 12, '24m': 24 };
@@ -73,6 +81,13 @@ async function q(sql) {
   return rows;
 }
 const num = (v) => (v === null || v === undefined ? 0 : Number(v));
+
+// Free metadata call (no query bytes billed) — used as the cache key so the
+// daily job doesn't re-scan BigQuery when the source hasn't changed.
+async function sourceLastModified() {
+  const [md] = await bq.dataset(DATASET).table(TABLE_ID).getMetadata();
+  return String(md.lastModifiedTime);
+}
 
 async function fetchWindow(n) {
   const lb = windowLowerBound(n);
@@ -228,7 +243,18 @@ async function fetchPivot() {
 }
 
 async function main() {
-  console.log('Baking Bellesa product journey from BigQuery...');
+  // ---- cost cache: skip the whole bake if the source table is unchanged ----
+  const srcModified = await sourceLastModified();
+  let prev = null;
+  try { prev = JSON.parse(fs.readFileSync(OUT, 'utf8')); } catch {}
+  if (!FORCE && prev && prev.meta && prev.meta.sourceLastModified === srcModified) {
+    console.log(
+      `Source table unchanged since last bake (lastModified=${srcModified}). ` +
+      `Skipping — zero BigQuery scan cost. Run with --force to rebuild anyway.`
+    );
+    return;
+  }
+  console.log('Baking Bellesa product journey from BigQuery' + (FORCE ? ' (forced)' : '') + '...');
 
   const monthOptions = (
     await q(`WITH ${BASE}
@@ -260,6 +286,8 @@ async function main() {
     meta: {
       generatedAt: new Date().toISOString(),
       source: 'insightsprod.bellesaenterprises_5719_prod_presentation.customer_product_purchase_journey',
+      sourceLastModified: srcModified, // cache key: skip re-bake when unchanged
+      freeProduct: "Promotion = 'Free Product' tag (not $0); an order is free if it has any free-tagged item",
       currentMonthExcluded: true,
       anchor: 'acquisition_month (cohort)',
       grain: 'true-new customer (each customer\'s first-ever acquisition; reactivations dropped)',

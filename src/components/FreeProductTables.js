@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import './ProductTables.css';
-import { buildFreeTable, resolveMonths, monthPresets, monthLabel, intFull, moneyFull } from '../data';
+import { buildFreeTable, resolveMonths, monthPresets, monthLabel, intFull } from '../data';
 import { Dropdown } from './controls';
 
 const LEVELS = [
@@ -26,7 +26,6 @@ function FreeLevelTable({ badge, title, rows }) {
               <th className="c-rank">#</th>
               <th className="c-prod">Product</th>
               <th className="c-num">Customers</th>
-              <th className="c-num">Net sales</th>
             </tr>
           </thead>
           <tbody>
@@ -38,11 +37,10 @@ function FreeLevelTable({ badge, title, rows }) {
                   <span className="prod-bar" style={{ width: (r.customers / max) * 100 + '%' }} />
                 </td>
                 <td className="c-num strong">{intFull(r.customers)}</td>
-                <td className="c-num muted">{moneyFull(r.netSales)}</td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={4} className="empty">No free products for this selection.</td></tr>
+              <tr><td colSpan={3} className="empty">No free products for this selection.</td></tr>
             )}
           </tbody>
         </table>
@@ -60,9 +58,9 @@ export default function FreeProductTables({ freeTables, monthOptions }) {
 
   const built = useMemo(
     () => ({
-      acq: buildFreeTable(freeTables.acq, monthsSet, query, 20),
-      second: buildFreeTable(freeTables.second, monthsSet, query, 20),
-      third: buildFreeTable(freeTables.third, monthsSet, query, 20),
+      acq: buildFreeTable(freeTables.acq, monthsSet, query, 10),
+      second: buildFreeTable(freeTables.second, monthsSet, query, 10),
+      third: buildFreeTable(freeTables.third, monthsSet, query, 10),
     }),
     [freeTables, monthsSet, query]
   );
@@ -73,7 +71,7 @@ export default function FreeProductTables({ freeTables, monthOptions }) {
         <div>
           <h2 className="card-title">Free Products by Purchase Step</h2>
           <p className="card-desc">
-            Top 20 free-promotion products at each step · customers who received them ·
+            Top 10 free-promotion products at each step · customers who received them ·
             sliced by acquisition-cohort month
           </p>
         </div>

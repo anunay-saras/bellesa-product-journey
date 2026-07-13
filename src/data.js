@@ -78,6 +78,24 @@ export function buildTable(rows, monthsSet, freeSel, topN = 20) {
   return list.slice(0, topN);
 }
 
+// Free-products-only table. rows: [month, product, customers, netSales].
+// Optional case-insensitive name search.
+export function buildFreeTable(rows, monthsSet, query, topN = 20) {
+  const q = (query || '').trim().toLowerCase();
+  const agg = new Map();
+  for (const [month, product, customers, netSales] of rows) {
+    if (!monthsSet.has(month)) continue;
+    if (q && !product.toLowerCase().includes(q)) continue;
+    const cur = agg.get(product) || { product, customers: 0, netSales: 0 };
+    cur.customers += customers;
+    cur.netSales += netSales;
+    agg.set(product, cur);
+  }
+  const list = [...agg.values()];
+  list.sort((a, b) => b.customers - a.customers || a.product.localeCompare(b.product));
+  return list.slice(0, topN);
+}
+
 // ---- sankey (click drill-down) ----------------------------------------------
 // Column 1 = top-15 acquisition products. Selecting an acquisition product
 // reveals the 2nd products THOSE acquirers bought (path count = people who

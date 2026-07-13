@@ -108,7 +108,11 @@ async function fetchWindow(n) {
         COUNTIF(repurchased_within_180_days = 1 AND acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)),
         COUNTIF(acquisition_date <= DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY))
       ) * 100, 1) AS repurchase_6mo_rate,
-      ROUND(SUM(acquisition_net_sales_usd), 0) AS acq_sales
+      ROUND(SUM(acquisition_net_sales_usd), 0) AS acq_sales,
+      -- avg order value per purchase step = net sales / customers who made that purchase
+      ROUND(SAFE_DIVIDE(SUM(acquisition_net_sales_usd), COUNT(*)), 2) AS aov1,
+      ROUND(SAFE_DIVIDE(SUM(second_net_sales_usd), COUNTIF(second_product_name IS NOT NULL)), 2) AS aov2,
+      ROUND(SAFE_DIVIDE(SUM(third_net_sales_usd), COUNTIF(third_product_name IS NOT NULL)), 2) AS aov3
     FROM w`)
   )[0];
 
@@ -148,6 +152,9 @@ async function fetchWindow(n) {
       repurchase6moRate: num(kpis.repurchase_6mo_rate),
       eligible6mo: num(kpis.eligible_6mo),
       acqSales: num(kpis.acq_sales),
+      aov1: num(kpis.aov1),
+      aov2: num(kpis.aov2),
+      aov3: num(kpis.aov3),
     },
     node1: node1.map((r) => [r.product, num(r.free), num(r.customers)]),
     link12: link12.map((r) => [r.a, num(r.af), r.c, num(r.cf), num(r.customers)]),
@@ -183,6 +190,38 @@ async function fetchTable(level) {
     GROUP BY 1, 2, 3`);
 
   return rows.map((r) => [r.month, num(r.free), r.product, num(r.customers), num(r.net_sales)]);
+}
+
+// Free-products-only table per level: top-N FREE products per month, ranked
+// among free products (is_free_product = TRUE). Separate from fetchTable
+// because free products are a minority and would be missed by the free-agnostic
+// top-N cap there.
+async function fetchFreeTable(level) {
+  const cfg = {
+    acq: ['acquisition_product_name', 'acq_free', 'acquisition_net_sales_usd'],
+    second: ['second_product_name', 'second_free', 'second_net_sales_usd'],
+    third: ['third_product_name', 'third_free', 'third_net_sales_usd'],
+  }[level];
+  const [prod, freeFlag, sales] = cfg;
+
+  const rows = await q(`WITH ${BASE},
+    scoped AS (SELECT * FROM base WHERE ${freeFlag} = 1 AND ${prod} IS NOT NULL),
+    tot AS (
+      SELECT acquisition_month AS month, ${prod} AS product, COUNT(*) AS c
+      FROM scoped GROUP BY 1, 2
+    ),
+    top AS (
+      SELECT month, product FROM (
+        SELECT month, product, ROW_NUMBER() OVER (PARTITION BY month ORDER BY c DESC) rk FROM tot
+      ) WHERE rk <= ${TABLE_TOP_PER_MONTH}
+    )
+    SELECT s.acquisition_month AS month, s.${prod} AS product,
+           COUNT(*) AS customers, ROUND(SUM(s.${sales}), 2) AS net_sales
+    FROM scoped s
+    JOIN top ON top.month = s.acquisition_month AND top.product = s.${prod}
+    GROUP BY 1, 2`);
+
+  return rows.map((r) => [r.month, r.product, num(r.customers), num(r.net_sales)]);
 }
 
 async function fetchPivot() {
@@ -286,6 +325,14 @@ async function main() {
     third: await fetchTable('third'),
   };
 
+  console.log('  free-product tables ...');
+  const freeTables = {
+    columns: ['month', 'product', 'customers', 'netSales'],
+    acq: await fetchFreeTable('acq'),
+    second: await fetchFreeTable('second'),
+    third: await fetchFreeTable('third'),
+  };
+
   console.log('  pivot ...');
   const pivot = await fetchPivot();
 
@@ -318,6 +365,7 @@ async function main() {
     monthOptions,
     windows,
     tables,
+    freeTables,
     pivot,
   };
 

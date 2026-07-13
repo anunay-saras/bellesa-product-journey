@@ -2,8 +2,10 @@ import React, { useMemo, useState } from 'react';
 import './App.css';
 import baked from './baked-data.json';
 import KpiTiles from './components/KpiTiles';
+import AovStrip from './components/AovStrip';
 import SankeyJourney from './components/SankeyJourney';
 import ProductTables from './components/ProductTables';
+import FreeProductTables from './components/FreeProductTables';
 import PivotTable from './components/PivotTable';
 import Guide from './components/Guide';
 import SarasLogo from './components/SarasLogo';
@@ -67,8 +69,10 @@ export default function App() {
         {view === 'dashboard' ? (
           <>
             <KpiTiles kpis={windowData.kpis} />
+            <AovStrip kpis={windowData.kpis} />
             <SankeyJourney windowData={windowData} winLabel={win.toUpperCase()} />
             <ProductTables tables={baked.tables} monthOptions={baked.monthOptions} />
+            <FreeProductTables freeTables={baked.freeTables} monthOptions={baked.monthOptions} />
             <PivotTable pivot={baked.pivot} monthOptions={baked.monthOptions} />
           </>
         ) : (

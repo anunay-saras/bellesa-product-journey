@@ -4,6 +4,11 @@
   text-transform: uppercase; color: var(--muted);
 }
 
+.free-search-row {
+  display: flex;
+  margin: -4px 0 18px;
+}
+
 .lvl-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));

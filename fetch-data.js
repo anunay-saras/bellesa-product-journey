@@ -57,9 +57,9 @@ const BASE = `
   base AS (
     SELECT
       customer_id, acquisition_month, acquisition_date,
-      acquisition_product_name,  IF(acquisition_is_free_product, 1, 0) AS acq_free,  acquisition_net_sales_usd,
-      second_product_name,       IF(second_is_free_product, 1, 0)      AS second_free, second_net_sales_usd,
-      third_product_name,        IF(third_is_free_product, 1, 0)       AS third_free,  third_net_sales_usd,
+      acquisition_product_name,  IF(acquisition_is_free_product, 1, 0) AS acq_free,  acquisition_net_sales_usd,  acquisition_free_product_name,
+      second_product_name,       IF(second_is_free_product, 1, 0)      AS second_free, second_net_sales_usd,       second_free_product_name,
+      third_product_name,        IF(third_is_free_product, 1, 0)       AS third_free,  third_net_sales_usd,        third_free_product_name,
       days_to_second_order, repurchased_within_180_days
     FROM (
       -- Keep each customer's FIRST-EVER acquisition (true-new-customer grain).
@@ -192,22 +192,20 @@ async function fetchTable(level) {
   return rows.map((r) => [r.month, num(r.free), r.product, num(r.customers), num(r.net_sales)]);
 }
 
-// Free-products-only table per level: top-N FREE products per month, ranked
-// among free products (is_free_product = TRUE). Separate from fetchTable
-// because free products are a minority and would be missed by the free-agnostic
-// top-N cap there.
+// Free-products table per level: groups by the FREE PRODUCT NAME included in
+// that step's order (x_free_product_name — the free gift itself, distinct from
+// the purchased product), counting customers. Top-N free products per month.
 async function fetchFreeTable(level) {
-  const cfg = {
-    acq: ['acquisition_product_name', 'acq_free', 'acquisition_net_sales_usd'],
-    second: ['second_product_name', 'second_free', 'second_net_sales_usd'],
-    third: ['third_product_name', 'third_free', 'third_net_sales_usd'],
+  const freeName = {
+    acq: 'acquisition_free_product_name',
+    second: 'second_free_product_name',
+    third: 'third_free_product_name',
   }[level];
-  const [prod, freeFlag, sales] = cfg;
 
   const rows = await q(`WITH ${BASE},
-    scoped AS (SELECT * FROM base WHERE ${freeFlag} = 1 AND ${prod} IS NOT NULL),
+    scoped AS (SELECT * FROM base WHERE ${freeName} IS NOT NULL),
     tot AS (
-      SELECT acquisition_month AS month, ${prod} AS product, COUNT(*) AS c
+      SELECT acquisition_month AS month, ${freeName} AS product, COUNT(*) AS c
       FROM scoped GROUP BY 1, 2
     ),
     top AS (
@@ -215,13 +213,12 @@ async function fetchFreeTable(level) {
         SELECT month, product, ROW_NUMBER() OVER (PARTITION BY month ORDER BY c DESC) rk FROM tot
       ) WHERE rk <= ${TABLE_TOP_PER_MONTH}
     )
-    SELECT s.acquisition_month AS month, s.${prod} AS product,
-           COUNT(*) AS customers, ROUND(SUM(s.${sales}), 2) AS net_sales
+    SELECT s.acquisition_month AS month, s.${freeName} AS product, COUNT(*) AS customers
     FROM scoped s
-    JOIN top ON top.month = s.acquisition_month AND top.product = s.${prod}
+    JOIN top ON top.month = s.acquisition_month AND top.product = s.${freeName}
     GROUP BY 1, 2`);
 
-  return rows.map((r) => [r.month, r.product, num(r.customers), num(r.net_sales)]);
+  return rows.map((r) => [r.month, r.product, num(r.customers)]);
 }
 
 async function fetchPivot() {
@@ -327,7 +324,7 @@ async function main() {
 
   console.log('  free-product tables ...');
   const freeTables = {
-    columns: ['month', 'product', 'customers', 'netSales'],
+    columns: ['month', 'freeProduct', 'customers'],
     acq: await fetchFreeTable('acq'),
     second: await fetchFreeTable('second'),
     third: await fetchFreeTable('third'),

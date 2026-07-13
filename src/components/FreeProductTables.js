@@ -4,9 +4,9 @@ import { buildFreeTable, resolveMonths, monthPresets, monthLabel, intFull } from
 import { Dropdown } from './controls';
 
 const LEVELS = [
-  { key: 'acq', title: 'Free acquisition products', badge: '1st' },
-  { key: 'second', title: 'Free 2nd purchase', badge: '2nd' },
-  { key: 'third', title: 'Free 3rd purchase', badge: '3rd' },
+  { key: 'acq', title: 'Free product with acquisition', badge: '1st' },
+  { key: 'second', title: 'Free product with 2nd order', badge: '2nd' },
+  { key: 'third', title: 'Free product with 3rd order', badge: '3rd' },
 ];
 
 function FreeLevelTable({ badge, title, rows }) {

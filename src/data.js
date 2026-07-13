@@ -78,20 +78,17 @@ export function buildTable(rows, monthsSet, freeSel, topN = 20) {
   return list.slice(0, topN);
 }
 
-// Free-products-only table. rows: [month, product, customers, netSales].
+// Free-products table. rows: [month, freeProduct, customers].
 // Optional case-insensitive name search.
-export function buildFreeTable(rows, monthsSet, query, topN = 20) {
+export function buildFreeTable(rows, monthsSet, query, topN = 10) {
   const q = (query || '').trim().toLowerCase();
   const agg = new Map();
-  for (const [month, product, customers, netSales] of rows) {
+  for (const [month, product, customers] of rows) {
     if (!monthsSet.has(month)) continue;
     if (q && !product.toLowerCase().includes(q)) continue;
-    const cur = agg.get(product) || { product, customers: 0, netSales: 0 };
-    cur.customers += customers;
-    cur.netSales += netSales;
-    agg.set(product, cur);
+    agg.set(product, (agg.get(product) || 0) + customers);
   }
-  const list = [...agg.values()];
+  const list = [...agg.entries()].map(([product, customers]) => ({ product, customers }));
   list.sort((a, b) => b.customers - a.customers || a.product.localeCompare(b.product));
   return list.slice(0, topN);
 }
